@@ -4,6 +4,7 @@ metadata:
   name: wordpress-mysql
   labels:
     app: wordpress
+  namespace: wordpress
 spec:
   ports:
     - port: 3306
@@ -18,12 +19,17 @@ metadata:
   name: wordpress-mysql
   labels:
     app: wordpress
+  namespace: wordpress
 spec:
   selector:
-    matchLabels: {}
+    matchLabels:
+      app: wordpress 
+      tier: mysql
   template:
     metadata:
-      labels: {}
+      labels: 
+        app: wordpress
+        tier: mysql
     spec:
       containers:
       - image: mysql:8.0
@@ -38,11 +44,34 @@ spec:
             secretKeyRef:
               name: mysql-pass
               key: password
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysql-pass
+              key: password
         ports:
         - containerPort: 3306
           name: mysql
         resources:
           requests:
-            memory: "64Mi"
-            cpu: "250m"
-
+            memory: "250Mi"
+            cpu: "200m"
+        volumeMounts:  
+        - name: mysql-pv-claim
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-pv-claim
+        persistentVolumeClaim:
+          claimName: mysql-pv-claim
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pv-claim
+  namespace: wordpress
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
